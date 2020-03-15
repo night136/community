@@ -1,0 +1,15 @@
+2020-03-15 18:35:26.424  INFO 17292 --- [main] com.zfx.CommunityApplication             : Starting CommunityApplication on DESKTOP-58MP32E with PID 17292 (D:\community\target\classes started by zfx in D:\community)
+2020-03-15 18:35:26.436  INFO 17292 --- [main] com.zfx.CommunityApplication             : No active profile set, falling back to default profiles: default
+2020-03-15 18:35:31.301  INFO 17292 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+2020-03-15 18:35:31.387  INFO 17292 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2020-03-15 18:35:31.388  INFO 17292 --- [main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.30]
+2020-03-15 18:35:31.695  INFO 17292 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2020-03-15 18:35:31.696  INFO 17292 --- [main] o.s.web.context.ContextLoader            : Root WebApplicationContext: initialization completed in 5153 ms
+2020-03-15 18:35:35.894  INFO 17292 --- [main] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2020-03-15 18:35:36.068  INFO 17292 --- [main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page template: index
+2020-03-15 18:35:36.521  INFO 17292 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+2020-03-15 18:35:36.528  INFO 17292 --- [main] com.zfx.CommunityApplication             : Started CommunityApplication in 11.019 seconds (JVM running for 12.985)
+2020-03-15 18:37:04.113  INFO 17292 --- [http-nio-8080-exec-9] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2020-03-15 18:37:04.114  INFO 17292 --- [http-nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2020-03-15 18:37:04.124  INFO 17292 --- [http-nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Completed initialization in 10 ms
+2020-03-15 18:37:52.900  INFO 17292 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'

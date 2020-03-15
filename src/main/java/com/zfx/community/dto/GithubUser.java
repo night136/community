@@ -2,7 +2,18 @@ package com.zfx.community.dto;
 
 public class GithubUser {
     private String login;
+    private  Long id;
 
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    private  String bio;
+    private String avatarUrl;
     public String getLogin() {
         return login;
     }
@@ -10,11 +21,6 @@ public class GithubUser {
     public void setLogin(String login) {
         this.login = login;
     }
-
-    private  Long id;
-    private  String bio;
-
-
 
     public Long getId() {
         return id;
