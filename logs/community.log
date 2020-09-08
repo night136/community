@@ -1,15 +1,5 @@
-2020-03-15 18:35:26.424  INFO 17292 --- [main] com.zfx.CommunityApplication             : Starting CommunityApplication on DESKTOP-58MP32E with PID 17292 (D:\community\target\classes started by zfx in D:\community)
-2020-03-15 18:35:26.436  INFO 17292 --- [main] com.zfx.CommunityApplication             : No active profile set, falling back to default profiles: default
-2020-03-15 18:35:31.301  INFO 17292 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
-2020-03-15 18:35:31.387  INFO 17292 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2020-03-15 18:35:31.388  INFO 17292 --- [main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.30]
-2020-03-15 18:35:31.695  INFO 17292 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-2020-03-15 18:35:31.696  INFO 17292 --- [main] o.s.web.context.ContextLoader            : Root WebApplicationContext: initialization completed in 5153 ms
-2020-03-15 18:35:35.894  INFO 17292 --- [main] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
-2020-03-15 18:35:36.068  INFO 17292 --- [main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page template: index
-2020-03-15 18:35:36.521  INFO 17292 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
-2020-03-15 18:35:36.528  INFO 17292 --- [main] com.zfx.CommunityApplication             : Started CommunityApplication in 11.019 seconds (JVM running for 12.985)
-2020-03-15 18:37:04.113  INFO 17292 --- [http-nio-8080-exec-9] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-2020-03-15 18:37:04.114  INFO 17292 --- [http-nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-2020-03-15 18:37:04.124  INFO 17292 --- [http-nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Completed initialization in 10 ms
-2020-03-15 18:37:52.900  INFO 17292 --- [SpringContextShutdownHook] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'
+2020-09-07 10:24:03.721  WARN 31664 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=1d18h16m35s225ms263µs200ns).
+2020-09-07 10:51:09.179  WARN 31664 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=11m4s879ms626µs900ns).
+2020-09-07 11:13:09.180  WARN 31664 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=5m29s975ms898µs300ns).
+2020-09-07 14:51:36.298  WARN 31664 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=3h27s34ms323µs700ns).
+2020-09-07 15:20:38.425  WARN 31664 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=29m10s441ms38µs).

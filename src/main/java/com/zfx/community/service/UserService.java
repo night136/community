@@ -25,6 +25,8 @@ public class UserService {
             User dbUser = users.get(0);
             dbUser.setGmtModified(System.currentTimeMillis());
             dbUser.setAvatarUrl(user.getAvatarUrl());
+            dbUser.setAccountId(user.getAccountId());
+            dbUser.setBio(user.getBio());
             dbUser.setLogin(user.getLogin());
             dbUser.setToken(user.getToken());
             UserExample example=new UserExample();

@@ -44,7 +44,7 @@ public class SessionInterceptor implements HandlerInterceptor {
             request.getServletContext().setAttribute(adPos.name(), adService.list(adPos.name()));
         }
         Cookie[] cookies = request.getCookies();
-        if (cookies != null && cookies.length != 0)
+        if (cookies != null && cookies.length != 0)//有cookie
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals("token")) {
                     String token = cookie.getValue();
@@ -52,7 +52,7 @@ public class SessionInterceptor implements HandlerInterceptor {
                     userExample.createCriteria()
                             .andTokenEqualTo(token);
                     List<User> users = userMapper.selectByExample(userExample);
-                    if (users.size() != 0) {
+                    if (users.size() != 0) {//从数据库里查到该token的用户
                         HttpSession session = request.getSession();
                         session.setAttribute("user", users.get(0));
                         Long unreadCount = notificationService.unreadCount(users.get(0).getId());

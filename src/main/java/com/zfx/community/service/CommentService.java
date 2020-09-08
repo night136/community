@@ -58,7 +58,6 @@ public class CommentService {
                 throw new CustomizeException(CustomizeErrorCode.COMMENT_NOT_FOUND);
             }
 
-            // 回复问题
             Question question = questionMapper.selectByPrimaryKey(dbComment.getParentId());
             if (question == null) {
                 throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
@@ -68,7 +67,7 @@ public class CommentService {
 
             // 增加评论数
             Comment parentComment = new Comment();
-            parentComment.setId(comment.getParentId());
+            parentComment.setId(comment.getParentId());//评论的父级评论
             parentComment.setCommentCount(1);
             commentExtMapper.incCommentCount(parentComment);
 
@@ -140,5 +139,7 @@ public class CommentService {
         }).collect(Collectors.toList());
 
         return commentDTOS;
+
+        }
     }
-}
+

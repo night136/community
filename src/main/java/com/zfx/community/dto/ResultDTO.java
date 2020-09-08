@@ -4,8 +4,10 @@ package com.zfx.community.dto;
 import com.zfx.community.exception.CustomizeErrorCode;
 import com.zfx.community.exception.CustomizeException;
 
+import java.util.HashMap;
+
 /**
- * Created by codedrinker on 2019/5/31.
+ *@author  2019/5/31.
  */
 
 public class ResultDTO<T> {
@@ -66,4 +68,5 @@ public class ResultDTO<T> {
         resultDTO.setData(t);
         return resultDTO;
     }
+
 }

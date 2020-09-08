@@ -13,6 +13,7 @@ import com.zfx.community.mapper.UserMapper;
 import com.zfx.community.model.Question;
 import com.zfx.community.model.QuestionExample;
 import com.zfx.community.model.User;
+import org.apache.catalina.mbeans.MBeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.RowBounds;
 import org.springframework.beans.BeanUtils;
@@ -134,8 +135,13 @@ public class QuestionService {
         example.createCriteria()
                 .andCreatorEqualTo(userId);
         List<Question> questions = questionMapper.selectByExampleWithRowbounds(example, new RowBounds(offset, size));
-        List<QuestionDTO> questionDTOList = new ArrayList<>();
-
+      /*  List<QuestionDTO> questionDTOList =questionDTOList=questions.stream().map(question -> {
+            User  user=userMapper.selectByPrimaryKey(question.getCreator());
+            QuestionDTO questionDTO=new QuestionDTO();
+            BeanUtils.copyProperties(question,questionDTO);
+            questionDTO.setUser(user);
+            return questionDTO;}).collect(Collectors.toList());*/
+        List<QuestionDTO> questionDTOList=new ArrayList<>();
         for (Question question : questions) {
             User user = userMapper.selectByPrimaryKey(question.getCreator());
             QuestionDTO questionDTO = new QuestionDTO();
@@ -226,5 +232,10 @@ public class QuestionService {
                 throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
             }
        }
+    }
+
+    public void delete(Long id) {
+          int delete=  questionMapper.deleteByPrimaryKey(id);
+         // if(delete =0)
     }
 }

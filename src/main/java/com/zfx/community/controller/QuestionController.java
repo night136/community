@@ -2,6 +2,7 @@ package com.zfx.community.controller;
 
 import com.zfx.community.dto.CommentDTO;
 import com.zfx.community.dto.QuestionDTO;
+import com.zfx.community.dto.ResultDTO;
 import com.zfx.community.enums.CommentTypeEnum;
 import com.zfx.community.exception.CustomizeErrorCode;
 import com.zfx.community.exception.CustomizeException;
@@ -10,13 +11,12 @@ import com.zfx.community.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * Created by codedrinker on 2019/5/21.
+ * @author  2019/5/21.
  */
 @Controller
 public class QuestionController {
@@ -44,5 +44,11 @@ public class QuestionController {
         model.addAttribute("comments", comments);
         model.addAttribute("relatedQuestions", relatedQuestions);
         return "question";
+    }
+
+    @RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
+    public String delete(@PathVariable(name = "id") Long id) {
+       questionService.delete(id);
+        return "redirect:/profile/questions";
     }
 }

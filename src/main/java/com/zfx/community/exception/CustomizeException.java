@@ -5,9 +5,8 @@ package com.zfx.community.exception;
  */
 public class CustomizeException extends RuntimeException {
     private String message;
-    private Integer code;
-
-    public CustomizeException(ICustomizeErrorCode errorCode) {
+    private Integer code;//自定义异常 消息和状态码
+    public CustomizeException(ICustomizeErrorCode errorCode) {//错误码
         this.code = errorCode.getCode();
         this.message = errorCode.getMessage();
     }
