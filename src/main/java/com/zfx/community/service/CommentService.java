@@ -2,10 +2,16 @@ package com.zfx.community.service;
 
 import com.zfx.community.dto.CommentDTO;
 import com.zfx.community.enums.CommentTypeEnum;
+import com.zfx.community.enums.NotificationStatusEnum;
+import com.zfx.community.enums.NotificationTypeEnum;
 import com.zfx.community.exception.CustomizeErrorCode;
 import com.zfx.community.exception.CustomizeException;
 import com.zfx.community.mapper.CommentExtMapper;
 import com.zfx.community.mapper.CommentMapper;
+import com.zfx.community.mapper.NotificationMapper;
+import com.zfx.community.mapper.QuestionExtMapper;
+import com.zfx.community.mapper.QuestionMapper;
+import com.zfx.community.mapper.UserMapper;
 import com.zfx.community.model.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
