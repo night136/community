@@ -1,43 +1,36 @@
 # ============================================
-# Stage 1: Build with Maven
+# Stage 1: Build — 使用腾讯云 Maven 镜像加速
 # ============================================
-FROM maven:3.6.3-jdk-8 AS builder
+FROM maven:3.6.0-jdk-8-slim AS build
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first (cache dependencies)
-COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw mvnw.cmd ./
+# 先拷贝依赖文件，利用 Docker 缓存层
+COPY pom.xml settings.xml /app/
+RUN mvn -s /app/settings.xml dependency:go-offline -B
 
-# Download dependencies (cache layer)
-RUN mvn dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
-
-# Build the JAR
-RUN mvn clean package -DskipTests -B -q
+# 拷贝源码编译
+COPY src /app/src
+RUN mvn -s /app/settings.xml -f /app/pom.xml clean package -DskipTests
 
 # ============================================
-# Stage 2: Run with JRE
+# Stage 2: Run — 使用 Alpine + OpenJDK 8 缩小镜像
 # ============================================
-FROM openjdk:8-jre-slim
+FROM alpine:3.13
+
+# 使用腾讯云镜像源安装 JRE
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tencent.com/g' /etc/apk/repositories \
+    && apk add --update --no-cache openjdk8-jre-base ca-certificates tzdata \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone \
+    && rm -f /var/cache/apk/*
 
 WORKDIR /app
 
-# Create data directory for H2 database
-RUN mkdir -p /app/data
+# 拷贝构建产物
+COPY --from=build /app/target/*.jar app.jar
 
-# Copy the built JAR
-COPY --from=builder /app/target/*.jar app.jar
-
-# Expose port
+# 端口必须与 cloudbaserc.json 中的 containerPort 一致
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD java -cp app.jar org.springframework.boot.loader.JarLauncher --health-check || exit 1
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "app.jar"]
