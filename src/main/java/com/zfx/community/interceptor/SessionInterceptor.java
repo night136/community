@@ -1,14 +1,13 @@
 package com.zfx.community.interceptor;
 
-import com.zfx.community.enums.AdPosEnum;
 import com.zfx.community.mapper.UserMapper;
+import com.zfx.community.model.Ad;
+import com.zfx.community.model.Nav;
 import com.zfx.community.model.User;
 import com.zfx.community.model.UserExample;
 import com.zfx.community.service.AdService;
-import com.zfx.community.service.NotificationService;
+import com.zfx.community.service.NavService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -16,61 +15,57 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.util.List;
 
 /**
- * Created by codedrinker on 2019/5/16.
+ * 会话拦截器 - Cookie 鉴权 + 全局数据注入
  */
 @Service
 public class SessionInterceptor implements HandlerInterceptor {
 
     @Autowired
     private UserMapper userMapper;
-    @Autowired
-    private NotificationService notificationService;
+
     @Autowired
     private AdService adService;
 
-    @Value("${github.redirect.uri}")
-    private String redirectUri;
+    @Autowired
+    private NavService navService;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        //设置 context 级别的属性
-        request.getServletContext().setAttribute("redirectUri", redirectUri);
-        // 没有登录的时候也可以查看导航
-        for (AdPosEnum adPos : AdPosEnum.values()) {
-            request.getServletContext().setAttribute(adPos.name(), adService.list(adPos.name()));
-        }
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // 加载全局数据（广告、导航）
+        List<Ad> ads = adService.listByPos("side");
+        List<Nav> navs = navService.list();
+        request.getServletContext().setAttribute("ads", ads);
+        request.getServletContext().setAttribute("navs", navs);
+
+        // Cookie 鉴权
         Cookie[] cookies = request.getCookies();
-        if (cookies != null && cookies.length != 0)//有cookie
+        if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("token")) {
+                if ("token".equals(cookie.getName())) {
                     String token = cookie.getValue();
                     UserExample userExample = new UserExample();
-                    userExample.createCriteria()
-                            .andTokenEqualTo(token);
+                    userExample.createCriteria().andTokenEqualTo(token);
                     List<User> users = userMapper.selectByExample(userExample);
-                    if (users.size() != 0) {//从数据库里查到该token的用户
-                        HttpSession session = request.getSession();
-                        session.setAttribute("user", users.get(0));
-                        Long unreadCount = notificationService.unreadCount(users.get(0).getId());
-                        session.setAttribute("unreadCount", unreadCount);
+                    if (!users.isEmpty()) {
+                        request.getSession().setAttribute("user", users.get(0));
                     }
                     break;
                 }
             }
+        }
         return true;
     }
 
     @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable ModelAndView modelAndView) throws Exception {
-
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) {
+        // no-op
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception ex) throws Exception {
-
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        // no-op
     }
 }

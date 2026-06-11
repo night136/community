@@ -5,6 +5,8 @@ import com.zfx.community.dto.GithubUser;
 import com.zfx.community.model.User;
 import com.zfx.community.provider.GithubProvider;
 import com.zfx.community.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -16,8 +18,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.UUID;
 
-@Controller//授权获取githubuser
+/**
+ * GitHub OAuth 授权控制器
+ */
+@Controller
 public class AuthorizeController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthorizeController.class);
+    private static final int COOKIE_MAX_AGE = 60 * 60 * 24 * 30 * 6; // 6 months
 
     @Autowired
     private GithubProvider githubProvider;
@@ -37,15 +45,18 @@ public class AuthorizeController {
     @GetMapping("/callback")
     public String callback(@RequestParam(name = "code") String code,
                            @RequestParam(name = "state") String state,
+                           HttpServletRequest request,
                            HttpServletResponse response) {
         AccessTokenDTO accessTokenDTO = new AccessTokenDTO();
-        accessTokenDTO.setClient_id(clientId);
-        accessTokenDTO.setClient_secret(clientSecret);
+        accessTokenDTO.setClientId(clientId);
+        accessTokenDTO.setClientSecret(clientSecret);
         accessTokenDTO.setCode(code);
-        accessTokenDTO.setRedirect_uri(redirectUri);
-        accessTokenDTO.setState(state);//用code换acesstoken
+        accessTokenDTO.setRedirectUri(redirectUri);
+        accessTokenDTO.setState(state);
+
         String accessToken = githubProvider.getAccessToken(accessTokenDTO);
-        GithubUser githubUser = githubProvider.getUser(accessToken);//用accesstoken换信息
+        GithubUser githubUser = githubProvider.getUser(accessToken);
+
         if (githubUser != null && githubUser.getId() != null) {
             User user = new User();
             String token = UUID.randomUUID().toString();
@@ -53,14 +64,19 @@ public class AuthorizeController {
             user.setLogin(githubUser.getLogin());
             user.setAccountId(String.valueOf(githubUser.getId()));
             user.setAvatarUrl(githubUser.getAvatarUrl());
-            userService.creatOrUpdate(user);
+            userService.createOrUpdate(user);
+
             Cookie cookie = new Cookie("token", token);
-            cookie.setMaxAge(60 * 60 * 24 * 30 * 6);
+            cookie.setMaxAge(COOKIE_MAX_AGE);
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
             response.addCookie(cookie);
+
+            log.info("User logged in: {}", githubUser.getLogin());
             return "redirect:/";
         } else {
-            //log.error("callback get github error,{}", githubUser);
-            // 登录失败，重新登录
+            log.warn("GitHub login failed, code={}, state={}", code, state);
+            request.getSession().setAttribute("loginError", "GitHub 登录失败，请重试");
             return "redirect:/";
         }
     }
@@ -71,6 +87,7 @@ public class AuthorizeController {
         request.getSession().removeAttribute("user");
         Cookie cookie = new Cookie("token", null);
         cookie.setMaxAge(0);
+        cookie.setPath("/");
         response.addCookie(cookie);
         return "redirect:/";
     }

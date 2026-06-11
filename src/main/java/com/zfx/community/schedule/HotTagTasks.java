@@ -1,4 +1,5 @@
 package com.zfx.community.schedule;
+
 import com.zfx.community.cache.HotTagCache;
 import com.zfx.community.mapper.QuestionMapper;
 import com.zfx.community.model.Question;
@@ -9,11 +10,9 @@ import org.apache.ibatis.session.RowBounds;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
 import java.util.*;
 
-/**
- * Created by codedrinker on 2019/8/1.
- */
 @Slf4j
 @Component
 public class HotTagTasks {
@@ -28,27 +27,25 @@ public class HotTagTasks {
     public void hotTagSchedule() {
         int offset = 0;
         int limit = 20;
+        log.info("hotTagSchedule start");
 
-       // log.info("hotTagSchedule start {}", new Date());
-        List<Question> list = new ArrayList<>();
-
+        List<Question> list;
         Map<String, Integer> priorities = new HashMap<>();
-        while (offset == 0 || list.size() == limit) {
+
+        do {
             list = questionMapper.selectByExampleWithRowbounds(new QuestionExample(), new RowBounds(offset, limit));
             for (Question question : list) {
                 String[] tags = StringUtils.split(question.getTag(), ",");
+                if (tags == null) continue;
                 for (String tag : tags) {
-                    Integer priority = priorities.get(tag);
-                    if (priority != null) {
-                        priorities.put(tag, priority + 5 + question.getCommentCount());
-                    } else {
-                        priorities.put(tag, 5 + question.getCommentCount());
-                    }
+                    Integer priority = priorities.getOrDefault(tag, 0);
+                    priorities.put(tag, priority + 5 + question.getCommentCount());
                 }
             }
             offset += limit;
-        }
+        } while (list.size() == limit);
+
         hotTagCache.updateTags(priorities);
-        //log.info("hotTagSchedule stop {}", new Date());
+        log.info("hotTagSchedule stop, updated {} tags", priorities.size());
     }
 }

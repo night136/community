@@ -4,6 +4,10 @@ target/
 !**/src/main/**
 !**/src/test/**
 
+# Sensitive config - keep secrets out of git
+.env
+*.env.local
+
 ### STS ###
 .apt_generated
 .classpath

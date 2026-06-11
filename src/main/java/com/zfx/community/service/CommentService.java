@@ -2,11 +2,10 @@ package com.zfx.community.service;
 
 import com.zfx.community.dto.CommentDTO;
 import com.zfx.community.enums.CommentTypeEnum;
-import com.zfx.community.enums.NotificationStatusEnum;
-import com.zfx.community.enums.NotificationTypeEnum;
 import com.zfx.community.exception.CustomizeErrorCode;
 import com.zfx.community.exception.CustomizeException;
-import com.zfx.community.mapper.*;
+import com.zfx.community.mapper.CommentExtMapper;
+import com.zfx.community.mapper.CommentMapper;
 import com.zfx.community.model.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,17 +15,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Created by codedrinker on 2019/5/31.
+ * 评论服务
  */
 @Service
 public class CommentService {
 
     @Autowired
     private CommentMapper commentMapper;
+
+    @Autowired
+    private CommentExtMapper commentExtMapper;
 
     @Autowired
     private QuestionMapper questionMapper;
@@ -36,9 +37,6 @@ public class CommentService {
 
     @Autowired
     private UserMapper userMapper;
-
-    @Autowired
-    private CommentExtMapper commentExtMapper;
 
     @Autowired
     private NotificationMapper notificationMapper;
@@ -51,52 +49,51 @@ public class CommentService {
         if (comment.getType() == null || !CommentTypeEnum.isExist(comment.getType())) {
             throw new CustomizeException(CustomizeErrorCode.TYPE_PARAM_WRONG);
         }
-        if (comment.getType() == CommentTypeEnum.COMMENT.getType()) {
+        if (comment.getType().equals(CommentTypeEnum.COMMENT.getType())) {
             // 回复评论
             Comment dbComment = commentMapper.selectByPrimaryKey(comment.getParentId());
             if (dbComment == null) {
                 throw new CustomizeException(CustomizeErrorCode.COMMENT_NOT_FOUND);
             }
-
-            Question question = questionMapper.selectByPrimaryKey(dbComment.getParentId());
-            if (question == null) {
-                throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
-            }
-
+            comment.setGmtCreate(System.currentTimeMillis());
+            comment.setGmtModified(comment.getGmtCreate());
+            comment.setContent(comment.getContent());
+            comment.setLikeCount(0);
             commentMapper.insert(comment);
 
             // 增加评论数
             Comment parentComment = new Comment();
-            parentComment.setId(comment.getParentId());//评论的父级评论
+            parentComment.setId(comment.getParentId());
             parentComment.setCommentCount(1);
             commentExtMapper.incCommentCount(parentComment);
 
             // 创建通知
-            createNotify(comment, dbComment.getCommentator(), commentator.getLogin(), question.getTitle(), NotificationTypeEnum.REPLY_COMMENT, question.getId());
+            createNotify(comment, dbComment.getCommentator(), commentator.getLogin(),
+                    dbComment.getContent(), NotificationTypeEnum.REPLY_COMMENT.getType());
         } else {
             // 回复问题
             Question question = questionMapper.selectByPrimaryKey(comment.getParentId());
             if (question == null) {
                 throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
             }
+            comment.setGmtCreate(System.currentTimeMillis());
+            comment.setGmtModified(comment.getGmtCreate());
+            comment.setLikeCount(0);
             comment.setCommentCount(0);
             commentMapper.insert(comment);
-            question.setCommentCount(1);
             questionExtMapper.incCommentCount(question);
 
-            // 创建通知
-            createNotify(comment, question.getCreator(), commentator.getLogin(), question.getTitle(), NotificationTypeEnum.REPLY_QUESTION, question.getId());
+            createNotify(comment, question.getCreator(), commentator.getLogin(),
+                    question.getTitle(), NotificationTypeEnum.REPLY_QUESTION.getType());
         }
     }
 
-    private void createNotify(Comment comment, Long receiver, String notifierName, String outerTitle, NotificationTypeEnum notificationType, Long outerId) {
-        if (receiver == comment.getCommentator()) {
-            return;
-        }
+    private void createNotify(Comment comment, Long receiver, String notifierName,
+                               String outerTitle, Integer notifyType) {
         Notification notification = new Notification();
         notification.setGmtCreate(System.currentTimeMillis());
-        notification.setType(notificationType.getType());
-        notification.setOuterid(outerId);
+        notification.setType(notifyType);
+        notification.setOuterId(comment.getParentId());
         notification.setNotifier(comment.getCommentator());
         notification.setStatus(NotificationStatusEnum.UNREAD.getStatus());
         notification.setReceiver(receiver);
@@ -113,33 +110,26 @@ public class CommentService {
         commentExample.setOrderByClause("gmt_create desc");
         List<Comment> comments = commentMapper.selectByExample(commentExample);
 
-        if (comments.size() == 0) {
+        if (comments.isEmpty()) {
             return new ArrayList<>();
         }
-        // 获取去重的评论人
-        Set<Long> commentators = comments.stream().map(comment -> comment.getCommentator()).collect(Collectors.toSet());
-        List<Long> userIds = new ArrayList();
-        userIds.addAll(commentators);
 
-
-        // 获取评论人并转换为 Map
+        // 批量查询用户，避免 N+1
+        List<Long> userIds = comments.stream()
+                .map(Comment::getCommentator)
+                .distinct()
+                .collect(Collectors.toList());
         UserExample userExample = new UserExample();
-        userExample.createCriteria()
-                .andIdIn(userIds);
+        userExample.createCriteria().andIdIn(userIds);
         List<User> users = userMapper.selectByExample(userExample);
-        Map<Long, User> userMap = users.stream().collect(Collectors.toMap(user -> user.getId(), user -> user));
+        Map<Long, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
 
-
-        // 转换 comment 为 commentDTO
-        List<CommentDTO> commentDTOS = comments.stream().map(comment -> {
+        return comments.stream().map(comment -> {
             CommentDTO commentDTO = new CommentDTO();
             BeanUtils.copyProperties(comment, commentDTO);
             commentDTO.setUser(userMap.get(comment.getCommentator()));
             return commentDTO;
         }).collect(Collectors.toList());
-
-        return commentDTOS;
-
-        }
     }
-
+}

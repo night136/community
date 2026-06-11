@@ -2,20 +2,21 @@ package com.zfx.community.controller;
 
 import com.zfx.community.cache.HotTagCache;
 import com.zfx.community.dto.PaginationDTO;
-import com.zfx.community.dto.QuestionDTO;
-import com.zfx.community.mapper.UserMapper;
-import com.zfx.community.model.User;
-import com.zfx.community.model.UserExample;
 import com.zfx.community.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
 import java.util.List;
 
+/**
+ * 首页控制器
+ */
 @Controller
-    public class IndexController {
+public class IndexController {
+
     @Autowired
     private QuestionService questionService;
 
@@ -39,4 +40,3 @@ import java.util.List;
         return "index";
     }
 }
-

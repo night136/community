@@ -1,22 +1,25 @@
 package com.zfx.community.exception;
 
 /**
- * Created by codedrinker on 2019/5/28.
+ * 自定义异常
  */
 public class CustomizeException extends RuntimeException {
-    private String message;
-    private Integer code;//自定义异常 消息和状态码
-    public CustomizeException(ICustomizeErrorCode errorCode) {//错误码
+
+    private final Integer code;
+    private final String message;
+
+    public CustomizeException(ICustomizeErrorCode errorCode) {
+        super(errorCode.getMessage());
         this.code = errorCode.getCode();
         this.message = errorCode.getMessage();
+    }
+
+    public Integer getCode() {
+        return code;
     }
 
     @Override
     public String getMessage() {
         return message;
-    }
-
-    public Integer getCode() {
-        return code;
     }
 }

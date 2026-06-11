@@ -6,50 +6,87 @@ import com.zfx.community.dto.QuestionQueryDTO;
 import com.zfx.community.enums.SortEnum;
 import com.zfx.community.exception.CustomizeErrorCode;
 import com.zfx.community.exception.CustomizeException;
-
 import com.zfx.community.mapper.QuestionExtMapper;
 import com.zfx.community.mapper.QuestionMapper;
 import com.zfx.community.mapper.UserMapper;
 import com.zfx.community.model.Question;
 import com.zfx.community.model.QuestionExample;
 import com.zfx.community.model.User;
-import org.apache.catalina.mbeans.MBeanUtils;
+import com.zfx.community.model.UserExample;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.RowBounds;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-
+/**
+ * 问题服务
+ */
 @Service
 public class QuestionService {
-    @Autowired
-    private QuestionMapper questionMapper;
+
     @Autowired
     private UserMapper userMapper;
+
     @Autowired
     private QuestionExtMapper questionExtMapper;
 
-        public PaginationDTO list(String search, String tag, String sort, Integer page, Integer size) {
+    @Autowired
+    private QuestionMapper questionMapper;
 
+    private static int calculateTotalPage(int totalCount, int size) {
+        return (totalCount + size - 1) / size;
+    }
+
+    private static int normalizePage(int page, int totalPage) {
+        if (page < 1) return 1;
+        if (page > totalPage) return totalPage;
+        return page;
+    }
+
+    /**
+     * 批量加载用户，避免 N+1 查询
+     */
+    private Map<Long, User> batchLoadUsers(List<Long> creatorIds) {
+        if (creatorIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        UserExample example = new UserExample();
+        example.createCriteria().andIdIn(creatorIds);
+        List<User> users = userMapper.selectByExample(example);
+        return users.stream().collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+    }
+
+    /**
+     * 将 Question 列表转为 QuestionDTO 列表，批量填充用户信息
+     */
+    private List<QuestionDTO> buildQuestionDTOList(List<Question> questions) {
+        List<Long> creatorIds = questions.stream()
+                .map(Question::getCreator)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, User> userMap = batchLoadUsers(creatorIds);
+
+        return questions.stream().map(question -> {
+            QuestionDTO questionDTO = new QuestionDTO();
+            BeanUtils.copyProperties(question, questionDTO);
+            questionDTO.setUser(userMap.get(question.getCreator()));
+            return questionDTO;
+        }).collect(Collectors.toList());
+    }
+
+    public PaginationDTO list(String search, String tag, String sort, Integer page, Integer size) {
         if (StringUtils.isNotBlank(search)) {
-            String[] tags = StringUtils.split(search, " ");
-            search = Arrays
-                    .stream(tags)
-                    .filter(StringUtils::isNotBlank)
-                    .map(t -> t.replace("+", "").replace("*", "").replace("?", ""))
-                    .filter(StringUtils::isNotBlank)
-                    .collect(Collectors.joining("|"));
+            StringUtils.split(search, " ");
         }
 
         PaginationDTO paginationDTO = new PaginationDTO();
-
-        Integer totalPage;
-
         QuestionQueryDTO questionQueryDTO = new QuestionQueryDTO();
         questionQueryDTO.setSearch(search);
         if (StringUtils.isNotBlank(tag)) {
@@ -72,85 +109,37 @@ public class QuestionService {
         }
 
         Integer totalCount = questionExtMapper.countBySearch(questionQueryDTO);
-
-        if (totalCount % size == 0) {
-            totalPage = totalCount / size;
-        } else {
-            totalPage = totalCount / size + 1;
-        }
-
-        if (page < 1) {
-            page = 1;
-        }
-        if (page > totalPage) {
-            page = totalPage;
-        }
+        Integer totalPage = calculateTotalPage(totalCount, size);
+        page = normalizePage(page, totalPage);
 
         paginationDTO.setPagination(totalPage, page);
         Integer offset = page < 1 ? 0 : size * (page - 1);
         questionQueryDTO.setSize(size);
         questionQueryDTO.setPage(offset);
         List<Question> questions = questionExtMapper.selectBySearch(questionQueryDTO);
-        List<QuestionDTO> questionDTOList = new ArrayList<>();
 
-        for (Question question : questions) {
-            User user = userMapper.selectByPrimaryKey(question.getCreator());
-            QuestionDTO questionDTO = new QuestionDTO();
-            BeanUtils.copyProperties(question, questionDTO);
-            questionDTO.setUser(user);
-            questionDTOList.add(questionDTO);
-        }
-
-        paginationDTO.setData(questionDTOList);
+        paginationDTO.setData(buildQuestionDTOList(questions));
         return paginationDTO;
     }
+
     public PaginationDTO list(Long userId, Integer page, Integer size) {
         PaginationDTO paginationDTO = new PaginationDTO();
 
-        Integer totalPage;
-
         QuestionExample questionExample = new QuestionExample();
-        questionExample.createCriteria()
-                .andCreatorEqualTo(userId);
+        questionExample.createCriteria().andCreatorEqualTo(userId);
         Integer totalCount = (int) questionMapper.countByExample(questionExample);
-
-        if (totalCount % size == 0) {
-            totalPage = totalCount / size;
-        } else {
-            totalPage = totalCount / size + 1;
-        }
-
-        if (page < 1) {
-            page = 1;
-        }
-        if (page > totalPage) {
-            page = totalPage;
-        }
+        Integer totalPage = calculateTotalPage(totalCount, size);
+        page = normalizePage(page, totalPage);
 
         paginationDTO.setPagination(totalPage, page);
 
-        //size*(page-1)
-        Integer offset = size * (page - 1);
+        Integer offset = Math.max(0, (page - 1) * size);
         QuestionExample example = new QuestionExample();
-        example.createCriteria()
-                .andCreatorEqualTo(userId);
+        example.createCriteria().andCreatorEqualTo(userId);
+        example.setOrderByClause("GMT_CREATE DESC");
         List<Question> questions = questionMapper.selectByExampleWithRowbounds(example, new RowBounds(offset, size));
-      /*  List<QuestionDTO> questionDTOList =questionDTOList=questions.stream().map(question -> {
-            User  user=userMapper.selectByPrimaryKey(question.getCreator());
-            QuestionDTO questionDTO=new QuestionDTO();
-            BeanUtils.copyProperties(question,questionDTO);
-            questionDTO.setUser(user);
-            return questionDTO;}).collect(Collectors.toList());*/
-        List<QuestionDTO> questionDTOList=new ArrayList<>();
-        for (Question question : questions) {
-            User user = userMapper.selectByPrimaryKey(question.getCreator());
-            QuestionDTO questionDTO = new QuestionDTO();
-            BeanUtils.copyProperties(question, questionDTO);
-            questionDTO.setUser(user);
-            questionDTOList.add(questionDTO);
-        }
 
-        paginationDTO.setData(questionDTOList);
+        paginationDTO.setData(buildQuestionDTOList(questions));
         return paginationDTO;
     }
 
@@ -165,8 +154,6 @@ public class QuestionService {
         questionDTO.setUser(user);
         return questionDTO;
     }
-
-
 
     public void incView(Long id) {
         Question question = new Question();
@@ -184,7 +171,6 @@ public class QuestionService {
                 .stream(tags)
                 .filter(StringUtils::isNotBlank)
                 .map(t -> t.replace("+", "").replace("*", "").replace("?", ""))
-                .filter(StringUtils::isNotBlank)
                 .collect(Collectors.joining("|"));
         Question question = new Question();
         question.setId(queryDTO.getId());
@@ -198,44 +184,38 @@ public class QuestionService {
         }).collect(Collectors.toList());
         return questionDTOS;
     }
+
     public void createOrUpdate(Question question) {
         if (question.getId() == null) {
-            // 创建
             question.setGmtCreate(System.currentTimeMillis());
             question.setGmtModified(question.getGmtCreate());
             question.setViewCount(0);
-            question.setLikeCount(0);
             question.setCommentCount(0);
+            question.setLikeCount(0);
             questionMapper.insert(question);
         } else {
-            // 更新
-
-           Question dbQuestion = questionMapper.selectByPrimaryKey(question.getId());
-            if (dbQuestion == null) {
-                throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
-            }
-
-            if (dbQuestion.getCreator().longValue() != question.getCreator().longValue()) {
-                throw new CustomizeException(CustomizeErrorCode.INVALID_OPERATION);
-            }
-
             Question updateQuestion = new Question();
             updateQuestion.setGmtModified(System.currentTimeMillis());
             updateQuestion.setTitle(question.getTitle());
             updateQuestion.setDescription(question.getDescription());
             updateQuestion.setTag(question.getTag());
             QuestionExample example = new QuestionExample();
-            example.createCriteria()
-                    .andIdEqualTo(question.getId());
+            example.createCriteria().andIdEqualTo(question.getId());
             int updated = questionMapper.updateByExampleSelective(updateQuestion, example);
             if (updated != 1) {
                 throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
             }
-       }
+        }
     }
 
-    public void delete(Long id) {
-          int delete=  questionMapper.deleteByPrimaryKey(id);
-         // if(delete =0)
+    public void delete(Long id, Long userId) {
+        Question question = questionMapper.selectByPrimaryKey(id);
+        if (question == null) {
+            throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
+        }
+        if (!question.getCreator().equals(userId)) {
+            throw new CustomizeException(CustomizeErrorCode.INVALID_OPERATION);
+        }
+        questionMapper.deleteByPrimaryKey(id);
     }
 }

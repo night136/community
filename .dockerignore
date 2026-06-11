@@ -1,0 +1,30 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+logs/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Sensitive
+.env
+application-prod.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CloudBase
+node_modules/

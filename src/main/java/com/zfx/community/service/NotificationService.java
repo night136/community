@@ -1,4 +1,5 @@
 package com.zfx.community.service;
+
 import com.zfx.community.dto.NotificationDTO;
 import com.zfx.community.dto.PaginationDTO;
 import com.zfx.community.enums.NotificationStatusEnum;
@@ -18,42 +19,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Created by codedrinker on 2019/6/14.
- */
 @Service
 public class NotificationService {
 
     @Autowired
     private NotificationMapper notificationMapper;
 
-    public PaginationDTO list(Long userId, Integer page, Integer size) {
-
+    public PaginationDTO<NotificationDTO> list(Long userId, Integer page, Integer size) {
         PaginationDTO<NotificationDTO> paginationDTO = new PaginationDTO<>();
 
-        Integer totalPage;
-
-        NotificationExample notificationExample = new NotificationExample();
-        notificationExample.createCriteria()
+        NotificationExample countExample = new NotificationExample();
+        countExample.createCriteria()
                 .andReceiverEqualTo(userId);
-        Integer totalCount = (int) notificationMapper.countByExample(notificationExample);
+        Integer totalCount = (int) notificationMapper.countByExample(countExample);
 
-        if (totalCount % size == 0) {
-            totalPage = totalCount / size;
-        } else {
-            totalPage = totalCount / size + 1;
-        }
-
-        if (page < 1) {
-            page = 1;
-        }
-        if (page > totalPage) {
-            page = totalPage;
-        }
-
+        Integer totalPage = calculateTotalPage(totalCount, size);
+        page = normalizePage(page, totalPage);
         paginationDTO.setPagination(totalPage, page);
 
-        //size*(page-1)
         Integer offset = size * (page - 1);
         NotificationExample example = new NotificationExample();
         example.createCriteria()
@@ -62,28 +45,23 @@ public class NotificationService {
 
         List<Notification> notifications = notificationMapper.selectByExampleWithRowbounds(example, new RowBounds(offset, size));
 
-        if (notifications.size() == 0) {
-            return paginationDTO;
-        }
-
-        List<NotificationDTO> notificationDTOS = new ArrayList<>();
-
+        List<NotificationDTO> notificationDTOList = new ArrayList<>();
         for (Notification notification : notifications) {
             NotificationDTO notificationDTO = new NotificationDTO();
             BeanUtils.copyProperties(notification, notificationDTO);
             notificationDTO.setTypeName(NotificationTypeEnum.nameOfType(notification.getType()));
-            notificationDTOS.add(notificationDTO);
+            notificationDTOList.add(notificationDTO);
         }
-        paginationDTO.setData(notificationDTOS);
+        paginationDTO.setData(notificationDTOList);
         return paginationDTO;
     }
 
     public Long unreadCount(Long userId) {
-        NotificationExample notificationExample = new NotificationExample();
-        notificationExample.createCriteria()
+        NotificationExample example = new NotificationExample();
+        example.createCriteria()
                 .andReceiverEqualTo(userId)
                 .andStatusEqualTo(NotificationStatusEnum.UNREAD.getStatus());
-        return notificationMapper.countByExample(notificationExample);
+        return notificationMapper.countByExample(example);
     }
 
     public NotificationDTO read(Long id, User user) {
@@ -102,5 +80,17 @@ public class NotificationService {
         BeanUtils.copyProperties(notification, notificationDTO);
         notificationDTO.setTypeName(NotificationTypeEnum.nameOfType(notification.getType()));
         return notificationDTO;
+    }
+
+    private Integer calculateTotalPage(Integer totalCount, Integer size) {
+        if (size <= 0) return 0;
+        return (totalCount + size - 1) / size;
+    }
+
+    private Integer normalizePage(Integer page, Integer totalPage) {
+        if (totalPage <= 0) return 1;
+        if (page < 1) return 1;
+        if (page > totalPage) return totalPage;
+        return page;
     }
 }
